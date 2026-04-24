@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  chat-server:
+    image: ghcr.io/YOUR_USERNAME/grpc-chat:latest
+    restart: unless-stopped
+    ports:
+      - "50051:50051"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
