@@ -10,13 +10,13 @@
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-image: url('https://web.telegram.org/a/chat-bg-pattern-light.png'); /* Паттерн фона */
-            background-color: #8fb1cb; /* Фон Telegram */
+            background-image: url('https://web.telegram.org/a/chat-bg-pattern-light.png');
+            background-color: #8fb1cb;
             background-blend-mode: overlay;
             display: flex;
             flex-direction: column;
             height: 100vh;
-            height: 100dvh; /* Для современных мобильных браузеров */
+            height: 100dvh;
         }
         #chat-container {
             flex: 1;
@@ -35,13 +35,11 @@
             line-height: 1.4;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
-        /* Чужие сообщения (белые, слева) */
         .message.other-message {
             align-self: flex-start;
             background-color: #ffffff;
             border-bottom-left-radius: 4px;
         }
-        /* Мои сообщения (зеленые, справа) */
         .message.my-message {
             align-self: flex-end;
             background-color: #e3ffc8;
@@ -87,7 +85,7 @@
             width: 24px;
             height: 24px;
             fill: white;
-            margin-left: -2px; /* Центровка иконки */
+            margin-left: -2px;
         }
     </style>
 </head>
@@ -101,40 +99,40 @@
     </div>
 
     <script>
-        // 1. Спрашиваем имя при входе
         let username = null;
         while (!username || username.trim() === '') {
             username = prompt("Введите ваше имя:");
         }
 
-        // 2. Подключаемся к WebSocket
         const loc = window.location;
-        let wsStart = 'ws://';
-        if (loc.protocol === 'https:') wsStart = 'wss://';
-        // Если открыли файл локально (file://), подключаемся к localhost, иначе по текущему хосту
-        const wsHost = loc.host ? loc.host : 'localhost:8080'; 
-        const ws = new WebSocket(wsStart + wsHost + '/ws');
+        let wsProtocol = 'ws://';
+        if (loc.protocol === 'https:') wsProtocol = 'wss://';
+        
+        let wsHost;
+        if (loc.hostname && loc.hostname !== 'localhost' && loc.hostname !== '127.0.0.1') {
+            wsHost = loc.hostname + ':8080';
+        } else {
+            wsHost = 'localhost:8080';
+        }
+        
+        const ws = new WebSocket(wsProtocol + wsHost + '/ws');
 
         const chatContainer = document.getElementById('chat-container');
         const messageInput = document.getElementById('message-input');
         const sendButton = document.getElementById('send-button');
 
-        // 3. Обработка входящих сообщений
         ws.onmessage = function(event) {
             const msg = JSON.parse(event.data);
             displayMessage(msg);
         };
 
-        // Функция отрисовки сообщения в интерфейсе
         function displayMessage(msg) {
             const msgDiv = document.createElement('div');
             msgDiv.classList.add('message');
             
-            // Если сообщение наше
             if (msg.user === username) {
                 msgDiv.classList.add('my-message');
             } else {
-                // Если чужое - добавляем имя
                 msgDiv.classList.add('other-message');
                 const userDiv = document.createElement('div');
                 userDiv.classList.add('user-name');
@@ -142,17 +140,14 @@
                 msgDiv.appendChild(userDiv);
             }
             
-            // Текст сообщения
             const textDiv = document.createElement('div');
             textDiv.textContent = msg.text;
             msgDiv.appendChild(textDiv);
             
             chatContainer.appendChild(msgDiv);
-            // Прокрутка чата вниз
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        // 4. Функция отправки сообщения
         function sendMessage() {
             const text = messageInput.value.trim();
             if (text !== '') {
@@ -161,14 +156,11 @@
                     text: text
                 };
                 ws.send(JSON.stringify(msg));
-                messageInput.value = ''; // Очищаем поле
+                messageInput.value = '';
             }
         }
 
-        // Обработчик клика по кнопке
         sendButton.addEventListener('click', sendMessage);
-
-        // Обработчик нажатия Enter на клавиатуре
         messageInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 sendMessage();

@@ -1,16 +1,21 @@
 package main
 
 import (
-    "log"
-    "net/http"
-    "web-chat/internal/handler"
+	"log"
+	"net/http"
+
+	"web-chat/internal/handler"
 )
 
 func main() {
-    fs := http.FileServer(http.Dir("./public"))
-    http.Handle("/", fs)
-    http.HandleFunc("/ws", handler.HandleConnections)
+	http.Handle("/", http.FileServer(http.Dir("./public")))
+	http.HandleFunc("/ws", handler.HandleConnections)
 
-    log.Println("✅ Сервер на порту 8080")
-    log.Fatal(http.ListenAndServe("0.0.0.0:8080", nil))
+	log.Println("✅ Сервер запущен на http://localhost:8080")
+	log.Println("📱 Для доступа с телефона: http://<ВАШ_IP>:8080")
+	
+	err := http.ListenAndServe("0.0.0.0:8080", nil)
+	if err != nil {
+		log.Fatal("❌ Ошибка:", err)
+	}
 }
