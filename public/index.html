@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Web Chat</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-image: url('https://web.telegram.org/a/chat-bg-pattern-light.png'); /* Паттерн фона */
+            background-color: #8fb1cb; /* Фон Telegram */
+            background-blend-mode: overlay;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh; /* Для современных мобильных браузеров */
+        }
+        #chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .message {
+            max-width: 80%;
+            margin-bottom: 12px;
+            padding: 10px 14px;
+            border-radius: 16px;
+            position: relative;
+            word-wrap: break-word;
+            line-height: 1.4;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        /* Чужие сообщения (белые, слева) */
+        .message.other-message {
+            align-self: flex-start;
+            background-color: #ffffff;
+            border-bottom-left-radius: 4px;
+        }
+        /* Мои сообщения (зеленые, справа) */
+        .message.my-message {
+            align-self: flex-end;
+            background-color: #e3ffc8;
+            border-bottom-right-radius: 4px;
+        }
+        .user-name {
+            font-weight: 600;
+            font-size: 0.85em;
+            color: #3390ec;
+            margin-bottom: 4px;
+        }
+        #input-container {
+            display: flex;
+            padding: 10px;
+            background-color: #ffffff;
+        }
+        #message-input {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 24px;
+            background-color: #f4f4f5;
+            outline: none;
+            font-size: 16px;
+        }
+        #send-button {
+            background-color: #3390ec;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            margin-left: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            transition: background-color 0.2s;
+        }
+        #send-button:active { background-color: #2a7ac8; }
+        #send-button svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+            margin-left: -2px; /* Центровка иконки */
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container"></div>
+    <div id="input-container">
+        <input type="text" id="message-input" placeholder="Сообщение..." autocomplete="off">
+        <button id="send-button">
+            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+        </button>
+    </div>
+
+    <script>
+        // 1. Спрашиваем имя при входе
+        let username = null;
+        while (!username || username.trim() === '') {
+            username = prompt("Введите ваше имя:");
+        }
+
+        // 2. Подключаемся к WebSocket
+        const loc = window.location;
+        let wsStart = 'ws://';
+        if (loc.protocol === 'https:') wsStart = 'wss://';
+        // Если открыли файл локально (file://), подключаемся к localhost, иначе по текущему хосту
+        const wsHost = loc.host ? loc.host : 'localhost:8080'; 
+        const ws = new WebSocket(wsStart + wsHost + '/ws');
+
+        const chatContainer = document.getElementById('chat-container');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+
+        // 3. Обработка входящих сообщений
+        ws.onmessage = function(event) {
+            const msg = JSON.parse(event.data);
+            displayMessage(msg);
+        };
+
+        // Функция отрисовки сообщения в интерфейсе
+        function displayMessage(msg) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message');
+            
+            // Если сообщение наше
+            if (msg.user === username) {
+                msgDiv.classList.add('my-message');
+            } else {
+                // Если чужое - добавляем имя
+                msgDiv.classList.add('other-message');
+                const userDiv = document.createElement('div');
+                userDiv.classList.add('user-name');
+                userDiv.textContent = msg.user;
+                msgDiv.appendChild(userDiv);
+            }
+            
+            // Текст сообщения
+            const textDiv = document.createElement('div');
+            textDiv.textContent = msg.text;
+            msgDiv.appendChild(textDiv);
+            
+            chatContainer.appendChild(msgDiv);
+            // Прокрутка чата вниз
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // 4. Функция отправки сообщения
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (text !== '') {
+                const msg = {
+                    user: username,
+                    text: text
+                };
+                ws.send(JSON.stringify(msg));
+                messageInput.value = ''; // Очищаем поле
+            }
+        }
+
+        // Обработчик клика по кнопке
+        sendButton.addEventListener('click', sendMessage);
+
+        // Обработчик нажатия Enter на клавиатуре
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
