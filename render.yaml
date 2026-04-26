@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: web-chat
+    runtime: go
+    buildCommand: go build -o chat-server ./cmd/server
+    startCommand: ./chat-server
+    envVars:
+      - key: PORT
+        value: 8080
+    plan: free
+    healthCheckPath: /
+    autoDeploy: true
